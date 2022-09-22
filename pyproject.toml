@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "python-grpckit"
+version = "0.1.0"
+description = ""
+authors = ["Lee Tang <i@d0zingcat.dev>"]
+readme = "README.md"
+packages = [{include = "grpckit"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+simplejson = "^3.17.2"
+click = "^7.1.2"
+grpcio = "1.48.1"
+grpcio-tools = "1.48.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
