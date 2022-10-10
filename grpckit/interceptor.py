@@ -1,6 +1,9 @@
 from functools import wraps
 from typing import Callable, List
 
+from grpckit.exception import RpcException
+from grpckit.pb import default_pb2
+
 from grpc import ServerInterceptor
 from grpc.experimental import wrap_server_method_handler
 
@@ -46,6 +49,37 @@ class MiddlewareInterceptor(BaseInterceptor):
                         % chain.__name__
                     )
             return response
+
+        return wrapper
+
+    def intercept_service(self, continuation, handler_call_details):
+        return wrap_server_method_handler(
+            self._wrapper, continuation(handler_call_details)
+        )
+
+
+class RpcExceptionInterceptor(BaseInterceptor):
+    """Global RpcException Interceptor, which intercepts all exceptions.
+    Wraps status code and msg to gRPC header.
+    """
+
+    def _wrapper(self, behavior):
+        @wraps(behavior)
+        def wrapper(request, context):
+            try:
+                response = behavior(request, context)
+                return response
+            except Exception as e:
+                # If the exception is instantiated from RpcException,
+                # use the code and details directly.
+                if isinstance(e, RpcException):
+                    context.set_code(e.status_code)
+                    context.set_details(e.details)
+                else:
+                    # common exceptions would defauld to RpcException
+                    context.set_code(RpcException.status_code)
+                    context.set_details(RpcException.details)
+                return default_pb2.Empty()
 
         return wrapper
 

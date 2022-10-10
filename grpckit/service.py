@@ -63,6 +63,8 @@ class Service:
                     response = func(request, context)
                     if not response_pb:
                         raise ValueError("Invalid response_pb!")
+                    if type(response) is not dict:
+                        raise AssertionError("Response must be python dict!")
                     return DictToMessage(response, response_pb())
 
             self.add_method_rule(wrapper.__name__, wrapper)

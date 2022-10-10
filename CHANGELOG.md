@@ -7,12 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- [Flask](https://flask.palletsprojects.com/en/2.2.x/) like app/request context.
+- App `teardonw_request` supported.
+- Reflection for gRPC option.
+- Wrapped client call procedure.
+- TODO. consider to wrap non-dict result when using reflection
+
+
+## [0.1.1] - 2022-10-10
+### Added
 - Complex route registration which read func name as grpc method.
 - Transparent convert request and response to Python Dict.
+- Exception handle.
+
 
 ### Changed
+- Rename `@app.route` to `@app.legacy_route`.
 
 ### Removed
+- Middleware. 
+
 
 ## [0.1.0] - 2022-09-30
 ### Added
@@ -24,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]:
 [0.1.0]: 
+[0.1.1]:
