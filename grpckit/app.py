@@ -16,7 +16,7 @@ from grpckit.constant import (
 )
 from grpckit.config import Config
 from grpckit.service import Service
-from grpckit.interceptor import MiddlewareInterceptor
+from grpckit.interceptor import MiddlewareInterceptor, RpcExceptionInterceptor
 from grpckit.utils.proto import scan_pb_grpc
 
 
@@ -60,12 +60,18 @@ class GrpcKitApp:
     ) -> None:
         options = self.config.rpc_options()
 
+        # With RpcExceptionInterceptor as the most inner interceptor,
+        # this ensures all the exceptions will be caught and process to
+        # normal grpc response, and the @after_request funcs will always be invoked.
+        # There is no need to worry about resource leak, in case that the
+        # after_request func itself would not cause exception at all.
         interceptors = (
             MiddlewareInterceptor(
                 self.before_request_funcs.get(None, ()),
                 self.after_request_funcs.get(None, ()),
             ),
             *self.interceptors.get(None, ()),
+            RpcExceptionInterceptor(),
         )
 
         max_workers = self.config.get(K_GRPCKIT_MAX_WORKERS, 10)

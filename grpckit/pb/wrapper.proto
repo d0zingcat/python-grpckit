@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package grpckit;
+
+import "google/protobuf/struct.proto";
+
+message WrapperResponse {
+    google.protobuf.Value data = 1;
+}
+
