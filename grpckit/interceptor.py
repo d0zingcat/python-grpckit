@@ -15,7 +15,7 @@ class MiddlewareInterceptor(BaseInterceptor):
         before_request_chains: List[Callable],
         after_request_chains: List[Callable],
     ) -> None:
-        """中间件拦截器"""
+        """Middleware Interceptor"""
         self.before_request_chains = before_request_chains
         self.after_request_chains = after_request_chains
 
@@ -30,19 +30,19 @@ class MiddlewareInterceptor(BaseInterceptor):
             ):
                 return behavior(request, context)
 
-            # 依次处理预请求
+            # process pre processors one by one
             for chain in self.before_request_chains:
                 resp = chain(request, context)
                 if resp:
                     return resp
-            # 实际函数处理
+            # actual working func
             response = behavior(request, context)
-            # 依次处理响应
+            # process post processors one by one
             for chain in self.after_request_chains:
                 response = chain(response)
                 if not response:
                     raise ValueError(
-                        "Miss response from after response middleware: %s"
+                        "Miss response from after response interceptor: %s"
                         % chain.__name__
                     )
             return response

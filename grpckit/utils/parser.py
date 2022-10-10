@@ -10,6 +10,8 @@ def DictToMessage(
     message: Message,
     ignore_unknown_fields: bool = True,
 ) -> Message:
+    if not isinstance(message, Message):
+        raise ValueError("Invalid message! Must be an instance of Message")
     return json_format.Parse(
         text=simplejson.dumps(data),
         message=message,
@@ -18,7 +20,6 @@ def DictToMessage(
 
 
 def MessageToDict(
-    data: Dict[Any, Any],
     message: Message,
     including_default_value_fields: bool = True,
     preserving_proto_field_name: bool = True,

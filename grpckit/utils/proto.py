@@ -26,12 +26,12 @@ def scan_pb_grpc(path=None):
         path = os.path.join(root, file)
         with open(path, "r", encoding="utf-8") as f:
             funcs = r_add_funcs.findall(f.read())
-            print(funcs)
+            # print(funcs)
             if not funcs:
                 continue
 
             module = path.replace("./", "").replace("/", ".").replace(".py", "")
-            print(module)
+            # print(module)
             obj = importlib.import_module(module)
             for func in funcs:
                 server_register_funcs[func] = getattr(obj, func)

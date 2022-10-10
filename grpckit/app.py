@@ -23,7 +23,7 @@ from grpckit.utils.proto import scan_pb_grpc
 class GrpcKitApp:
 
     # store all services registered
-    _services: Dict[str, "Service"] = {}
+    _services: Dict[str, Service] = {}
 
     default_config = MappingProxyType(
         {
@@ -35,9 +35,9 @@ class GrpcKitApp:
 
     def __init__(self, name=None):
         self.name: str = name or "grpckit"
-        self.config: "Config" = Config(self.default_config)
+        self.config: Config = Config(self.default_config)
 
-        self.services: Dict[str, "Service"] = {}
+        self.services: Dict[str, Service] = dict()
 
         self.before_request_funcs: Dict[Optional[str], List[Callable]] = defaultdict(
             list
@@ -101,8 +101,8 @@ class GrpcKitApp:
         return func
 
     def _bind_port(
-        self, server: "grpc.Server", address: str, **options: Any
-    ) -> "grpc.Server":
+        self, server: grpc.Server, address: str, **options: Any
+    ) -> grpc.Server:
         def _read_pem(path):
             if path is None:
                 return path
@@ -147,7 +147,7 @@ class GrpcKitApp:
 
         self._services[service.name] = service
 
-    def route(
+    def legacy_route(
         self, method: Optional[str] = None, service: Optional[str] = None
     ) -> Callable:
         def decorator(func: Callable) -> Callable:
@@ -164,7 +164,31 @@ class GrpcKitApp:
 
         return decorator
 
-    def _bind_service(self, server: "grpc.Server") -> None:
+    def route(
+        self, func: Optional[Callable] = None, service: Optional[str] = None
+    ) -> Callable:
+        def decorator(func: Callable) -> Callable:
+            method = func.__name__
+            if not service:
+                raise ValueError(f"Invalid service name for method: {method}")
+
+            s = self._services.get(service)
+            if not s:
+                s = Service(name=service)
+
+            s.add_method_rule(method, func)
+            self._services[service] = s
+
+            if not func:
+                raise ValueError("Invalid func! Func should not be None")
+            self.add_method_rule(func.__name__, func)
+            return func
+
+        if func is None:
+            return decorator
+        return decorator(func)
+
+    def _bind_service(self, server: grpc.Server) -> None:
         self._register_funcs = scan_pb_grpc(
             path=self.config.get(K_GRPCKIT_SERVICE_SCAN_DIR, ".")
         )
@@ -180,7 +204,7 @@ class GrpcKitApp:
                 raise ValueError(
                     f"Can't find service '{name}' info from ProtoBuf files!"
                 )
-
             # Use add_xServicer_to_server function in ProtoBuf to bind
             # service to gRPC server
+            print(func, instance)
             func(instance, server)
