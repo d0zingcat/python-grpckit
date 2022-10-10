@@ -6,13 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2022-09-30
 ### Added
-- New visual identity by [@tylerfortune8](https://github.com/tylerfortune8).
-- Version navigation.
+- Complex route registration which read func name as grpc method.
+- Transparent convert request and response to Python Dict.
 
 ### Changed
-- Start using "changelog" over "change log" since it's the common usage.
 
 ### Removed
-- Section about "changelog" vs "CHANGELOG".
+
+## [0.1.0] - 2022-09-30
+### Added
+- A [Mask](https://github.com/Eastwu5788/Mask) like grpckit launched.
+- Route registration, configurion, service control and interceptor compatible.
+- Auto read and import proto module.
+
+
+
+[Unreleased]:
+[0.1.0]: 
