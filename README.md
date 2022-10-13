@@ -12,3 +12,4 @@ Derived from [Mask](https://github.com/Eastwu5788/Mask.git), providing business-
 - [ ] 反射能力
 - [ ] 端口重用
 - [ ] exception的自定义处理能力
+- [ ] requests-like client call

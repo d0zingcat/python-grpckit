@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO Wrap data into WrapperResponse.
 - TODO Compatible to gevent.
 
-### Changed
-- Rename `grpckit.wrapper` to `grpckit.client`.
-- rename `grpckit.wrapper.GrpcKitClient` to `grpckit.client.GrpcKitClient`
-- Change status_code of common exception from `grpc.StatusCode.UNKNOWN` to `grpc.StatusCode.INTERNAL`
+
+## [0.1.3] - 2022-10-14
+### Added
+- Wrap gRPC client call procedure in an easy-use way.
 
 ## [0.1.2] - 2022-10-13
 ### Added
@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Move exception handler to outest round.
+- Rename `grpckit.wrapper` to `grpckit.client`.
+- Rename `grpckit.wrapper.GrpcKitClient` to `grpckit.client.GrpcKitClient`
+- Change status_code of common exception from `grpc.StatusCode.UNKNOWN` to `grpc.StatusCode.INTERNAL`
 
 ## [0.1.1] - 2022-10-10
 ### Added
@@ -48,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto read and import proto module.
 
 [Unreleased]:
+[0.1.3]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/d0zingcat/python-grpckit/releases/tag/v0.1.0

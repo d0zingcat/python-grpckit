@@ -236,7 +236,6 @@ class GrpcKitApp:
             func(instance, server)
             for k, v in pb_request_models.items():
                 self._pb_request_models[k] = v
-            print(self._pb_request_models)
 
     @property
     def debug(self) -> bool:

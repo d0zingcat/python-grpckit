@@ -1,37 +1,124 @@
 from contextlib import contextmanager
+import re
 
 import grpc
 
 from .common import ContextManager
+from .utils.proto import scan_pb_grpc
+from .utils.parser import DictToMessage, MessageToDict
 
 
-class BaseClient:
+class MethodWrapper:
+    def __init__(
+        self,
+        method,
+        channel,
+        name,
+        stub_name,
+        reuse_channel,
+        pb_request_models,
+        transparent_transform,
+    ):
+        self._method = method
+        self._channel = channel
+        self._reuse_channel = reuse_channel
+        self._pb_request_models = pb_request_models
+        self._transparent_transform = transparent_transform
+        self._name = name
+        self._stub_name = stub_name
+
+    def __call__(self, request=None, request_pb=None, response_pb=None, **kwargs):
+        if self._transparent_transform:
+            if not request_pb:
+                pass
+        if self._transparent_transform:
+            _name_split = re.split(r"Stub$", self._stub_name)
+            if not _name_split:
+                raise ValueError("Invalid stub!")
+            _name = _name_split[0]
+            request_import_format = f"{_name}__pb2.{self._name}_request"
+            response_import_format = f"{_name}__pb2.{self._name}_response"
+            if not request_pb:
+                request_pb = self._pb_request_models.get(request_import_format)
+            if not response_pb:
+                response_pb = self._pb_request_models.get(response_import_format)
+        if not request_pb:
+            raise ValueError("Invalid pb request")
+        if not response_pb:
+            raise ValueError("Invalid pb response")
+        if self._transparent_transform:
+            request = DictToMessage(request, request_pb())
+        response = self._method(request=request, **kwargs)
+        if self._transparent_transform:
+            response = MessageToDict(response, response_pb())
+        # 不重用channel则关闭
+        if not self._reuse_channel:
+            self._channel._close()
+        return response
+
+
+class GrpcKitClient:
     def __init__(
         self,
         target,
+        grpc_stub,
+        transparent_transform=True,
+        reuse_channel=False,
+        scan_dir="./protos/pb",
         credentials=None,
     ):
-        self.secure = False
+        self._secure = False
+        self._channel = None
+        self._pb_request_models = dict()
+
+        self._transparent_transform = transparent_transform
+        self._scan_dir = scan_dir
+        self._reuse_channel = reuse_channel
         if credentials:
-            self.secure = True
+            self._secure = True
+            self._credentials = credentials
+        self._stub = grpc_stub
+        self._stub_name = grpc_stub.__name__
         if len(target.split(":")) != 2:
             raise ValueError("Invalid target, should be like localhost:50051")
-        self.target = target
-        self().__init__()
+        self._target = target
+        _register_funcs, pb_request_models = scan_pb_grpc(
+            path=scan_dir,
+            import_request_model=True,
+        )
+        for k, v in pb_request_models.items():
+            self._pb_request_models[k] = v
 
+    @property
+    def channel(self):
+        if self._reuse_channel and self._channel is not None:
+            return self._channel
+        channel = self._get_channel()
+        if self._reuse_channel:
+            self._channel = channel
+        return channel
 
-class GrpcKitClient(BaseClient):
-    def __init__(self, pb_grpc=None, *args, **kwargs):
-        self.__init__(*args, **kwargs)
-
-    def __getattribute__(self, name):
-        pass
+    def _get_channel(self):
+        if self._secure:
+            return grpc.secure_channel(self._target, credentials=self._credentials)
+        else:
+            return grpc.insecure_channel(self._target)
 
     def __getattr__(self, name):
-        pass
+        channel = self.channel
+        stub = self._stub(channel)
+        return MethodWrapper(
+            getattr(stub, name),
+            channel,
+            name,
+            self._stub_name,
+            self._reuse_channel,
+            self._pb_request_models,
+            self._transparent_transform,
+        )
 
 
-class ClientContext(BaseClient, ContextManager):
+class ClientContext(ContextManager):
     def __init__(self, target, credentials=None):
         self.secure = False
         if credentials:
