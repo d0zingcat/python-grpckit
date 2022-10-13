@@ -1,12 +1,13 @@
-import os
-from typing import Dict, Optional, Callable, List, Type, Any
+from typing import Dict, Optional, Callable, List, Any
 from collections import defaultdict
 from types import MappingProxyType
+from concurrent.futures import ThreadPoolExecutor
+import os
+import sys
 
 import grpc
-from concurrent.futures import ThreadPoolExecutor
 
-from grpckit.constant import (
+from .constant import (
     K_GRPCKIT_DEBUG,
     K_GRPCKIT_MAX_WORKERS,
     K_GRPCKIT_TLS_CA_CERT,
@@ -14,16 +15,24 @@ from grpckit.constant import (
     K_GRPCKIT_TLS_SERVER_KEY,
     K_GRPCKIT_TLS_SERVER_CERT,
 )
-from grpckit.config import Config
-from grpckit.service import Service
-from grpckit.interceptor import MiddlewareInterceptor, RpcExceptionInterceptor
-from grpckit.utils.proto import scan_pb_grpc
+from .config import Config
+from .service import Service
+from .interceptor import MiddlewareInterceptor, RpcExceptionInterceptor
+from .ctx import AppContext, RequestContext
+from .utils.proto import scan_pb_grpc
+
+
+# a singleton sentinel value for parameter defaults
+_sentinel = object()
 
 
 class GrpcKitApp:
 
     # store all services registered
-    _services: Dict[str, Service] = {}
+    _services: Dict[str, Service] = dict()
+
+    # store all pb request models
+    _pb_request_models: Dict[str, Any] = dict()
 
     default_config = MappingProxyType(
         {
@@ -49,10 +58,6 @@ class GrpcKitApp:
 
         self.interceptors = {}
 
-        self.exc_handler_spec: Dict[
-            Optional[str], Dict[Type[Exception], Callable]
-        ] = defaultdict(lambda: defaultdict(dict))
-
         self.teardown_app_context_funcs: List[Callable] = []
 
     def run(
@@ -60,18 +65,32 @@ class GrpcKitApp:
     ) -> None:
         options = self.config.rpc_options()
 
-        # With RpcExceptionInterceptor as the most inner interceptor,
-        # this ensures all the exceptions will be caught and process to
-        # normal grpc response, and the @after_request funcs will always be invoked.
-        # There is no need to worry about resource leak, in case that the
-        # after_request func itself would not cause exception at all.
+        """With RpcExceptionInterceptor as the most inner interceptor,
+        this ensures all the exceptions will be caught and process to
+        normal grpc response, and the @after_request funcs will always be invoked.
+        There is no need to worry about resource leak, in case that the
+        after_request func itself would not cause exception at all.
+        Server side interceptor principal
+        clipped from [L13-python-interceptors.md](https://github.com/grpc/proposal/blob/master/L13-python-interceptors.md#server-side-implementation) # noqa: E501
+        Server Receives a Request ->
+        Interceptor A Start ->
+            Interceptor B Start ->
+                Interceptor C Start ->
+                    The Original Handler
+                Interceptor C Returns Updated Handler C ->
+            Interceptor B Returns Updated Handler B ->
+        Interceptor A Returns Updated Handler A ->
+
+        Invoke the Updated Handler A with the Request ->
+        Updated Handler A Returns Response ->
+        """
         interceptors = (
+            RpcExceptionInterceptor(self),
             MiddlewareInterceptor(
                 self.before_request_funcs.get(None, ()),
                 self.after_request_funcs.get(None, ()),
             ),
             *self.interceptors.get(None, ()),
-            RpcExceptionInterceptor(),
         )
 
         max_workers = self.config.get(K_GRPCKIT_MAX_WORKERS, 10)
@@ -195,10 +214,12 @@ class GrpcKitApp:
         return decorator(func)
 
     def _bind_service(self, server: grpc.Server) -> None:
-        self._register_funcs = scan_pb_grpc(
-            path=self.config.get(K_GRPCKIT_SERVICE_SCAN_DIR, ".")
+        register_funcs, pb_request_models = scan_pb_grpc(
+            path=self.config.get(K_GRPCKIT_SERVICE_SCAN_DIR, "."),
+            import_request_model=True,
         )
 
+        self._register_funcs = register_funcs
         for name, instance in self._services.items():
             if not isinstance(instance, Service):
                 raise TypeError(
@@ -212,5 +233,28 @@ class GrpcKitApp:
                 )
             # Use add_xServicer_to_server function in ProtoBuf to bind
             # service to gRPC server
-            print(func, instance)
             func(instance, server)
+            for k, v in pb_request_models.items():
+                self._pb_request_models[k] = v
+            print(self._pb_request_models)
+
+    @property
+    def debug(self) -> bool:
+        return self.config[K_GRPCKIT_DEBUG]
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        self.config[K_GRPCKIT_DEBUG] = value
+
+    def request_context(self, params, context):
+        return RequestContext(self, params, context)
+
+    def app_context(self):
+        return AppContext(self)
+
+    def do_teardown_app_context(self, exc: Optional[BaseException] = None) -> None:
+        """Called right before the application context is popped"""
+        if exc is _sentinel:
+            exc = sys.exc_info()[1]
+        for func in reversed(self.teardown_app_context_funcs):
+            func(exc)

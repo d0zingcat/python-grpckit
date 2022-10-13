@@ -4,13 +4,11 @@ Derived from [Mask](https://github.com/Eastwu5788/Mask.git), providing business-
 
 # Roadmap
 
-## 待办
+## 提案
 - [ ] trace能力
-- [ ] exception的拦截能力
 - [ ] sentry监控方案
 - [ ] 异步任务
 - [ ] 健康检查
-
-## 提案
 - [ ] 反射能力
 - [ ] 端口重用
+- [ ] exception的自定义处理能力
