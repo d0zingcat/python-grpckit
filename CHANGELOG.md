@@ -5,10 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
 ### Added
-- TODO [Flask](https://flask.palletsprojects.com/en/2.2.x/) like app/request context.
-- TODO App `teardonw_request` supported.
 - TODO Reflection for gRPC option.
 - TODO Wrapped client call procedure.
 - TODO Consider to wrap non-dict result when using reflection.
@@ -20,20 +17,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - rename `grpckit.wrapper.GrpcKitClient` to `grpckit.client.GrpcKitClient`
 - Change status_code of common exception from `grpc.StatusCode.UNKNOWN` to `grpc.StatusCode.INTERNAL`
 
+## [0.1.2] - 2022-10-13
+### Added
+- App/Request context management added.
+- [Flask](https://flask.palletsprojects.com/en/2.2.x/) like app/request context.
+- Local and proxy management for app added.
+- App `teardonw_request` added.
+- Debug would reraise exception.
+- Thanks to app/request context implementation, the hacking in service to read current_app state could be achieved, now the decorator `@app.armed` could be used without any params, but providing ability to transparently parse request/response.
+
+### Changed
+- Move exception handler to outest round.
+
 ## [0.1.1] - 2022-10-10
 ### Added
-- Complex route registration `@app.armed` which read func name as grpc method.
+- Complex route registration `@app.armed` which reads func name as grpc method.
 - Transparent convert request and response to Python Dict.
-- Exception handle.
-
+- Global excetion catch logic added.
 
 ### Changed
 - Rename `@app.route` to `@app.legacy_route`.
 
-
 ### Removed
 - Middleware. 
-
 
 ## [0.1.0] - 2022-09-30
 ### Added
@@ -41,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Route registration, configurion, service control and interceptor compatible.
 - Auto read and import proto module.
 
-
 [Unreleased]:
+[0.1.2]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/d0zingcat/python-grpckit/releases/tag/v0.1.0

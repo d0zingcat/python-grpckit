@@ -1,10 +1,11 @@
 from functools import wraps
 from typing import Callable, List
+import traceback
 
-from grpckit.exception import RpcException
-from grpckit.pb import default_pb2
+from .exception import RpcException
+from .pb import default_pb2
 
-from grpc import ServerInterceptor
+from grpc import ServerInterceptor, StatusCode
 from grpc.experimental import wrap_server_method_handler
 
 
@@ -63,22 +64,39 @@ class RpcExceptionInterceptor(BaseInterceptor):
     Wraps status code and msg to gRPC header.
     """
 
+    def __init__(  # pylint: disable=super-init-not-called
+        self,
+        app,
+    ) -> None:
+        self.app = app
+
     def _wrapper(self, behavior):
         @wraps(behavior)
         def wrapper(request, context):
+            ctx = self.app.request_context(request, context)
             try:
-                response = behavior(request, context)
-                return response
+                ctx.push()
+                return behavior(request, context)
             except Exception as e:
                 # If the exception is instantiated from RpcException,
                 # use the code and details directly.
+                # NOTE: Maybe it's a good choice to give permission to choose
+                # whether to raise exception or catch all exceptions,
+                # but to achieve this goal, the teardown_request feature must be
+                # completed firstly.
+                print(traceback.format_exc())
                 if isinstance(e, RpcException):
                     context.set_code(e.status_code)
                     context.set_details(e.details)
                 else:
                     # common exceptions would defauld to RpcException
-                    context.set_code(RpcException.status_code)
-                    context.set_details(RpcException.details)
+                    context.set_code(StatusCode.INTERNAL)
+                    context.set_details("Internal Error")
+                # if debug mode is on, overwrite error message
+                if self.app.debug:
+                    context.set_code(StatusCode.INTERNAL)
+                    context.set_details(traceback.format_exc())
+                    raise
                 return default_pb2.Empty()
 
         return wrapper

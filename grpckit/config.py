@@ -2,7 +2,7 @@ from typing import Optional, Dict, List
 
 import simplejson as json
 
-from grpckit.constant import (
+from .constant import (
     K_GRPCKIT_SEND_MESSAGE_MAX_LENGHT,
     K_GRPCKIT_RECEIVE_MESSAGE_MAX_LENGHT,
     K_GRPCKIT_OPTIONS,

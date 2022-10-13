@@ -5,7 +5,7 @@ from inspect import getfullargspec, isfunction
 import grpc
 
 
-from grpckit.utils.parser import MessageToDict, DictToMessage
+from .utils.parser import MessageToDict, DictToMessage
 
 
 class Service:
@@ -60,12 +60,26 @@ class Service:
             def wrapper(request, context):
                 if transparent_transform:
                     request = MessageToDict(request)
-                    response = func(request, context)
+                    # response_pb is optional, if not passed
+                    # will read response from current app domain
+                    # format is "{service.name}__pb2.{func.name}_response"
                     if not response_pb:
+                        # HACK: stateful method which gets data from current_app obj
+                        from ._global import current_app
+
+                        name = f"{self.name}__pb2.{func.__name__}_response"
+                        print(name)
+                        _response_pb = current_app._pb_request_models.get(name)
+                    else:
+                        _response_pb = response_pb
+                    response = func(request, context)
+                    if not _response_pb:
                         raise ValueError("Invalid response_pb!")
                     if type(response) is not dict:
                         raise AssertionError("Response must be python dict!")
-                    return DictToMessage(response, response_pb())
+                    return DictToMessage(response, _response_pb())
+                response = func(request, context)
+                return response
 
             self.add_method_rule(wrapper.__name__, wrapper)
             return wrapper
