@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, List
+from typing import Callable, List, Type, Dict
 import traceback
 
 from .exception import RpcException
@@ -62,13 +62,19 @@ class MiddlewareInterceptor(BaseInterceptor):
 class RpcExceptionInterceptor(BaseInterceptor):
     """Global RpcException Interceptor, which intercepts all exceptions.
     Wraps status code and msg to gRPC header.
+    :param exc_handlers is a dict whose signature is func(exception, grpc_context)
     """
 
     def __init__(  # pylint: disable=super-init-not-called
-        self,
-        app,
+        self, app, exc_handlers: Dict[Type[Exception], Callable] = None
     ) -> None:
         self.app = app
+        self._exc_handlers = exc_handlers or dict()
+
+    def _default_handler(self, e, context):
+        context.set_code(StatusCode.INTERNAL)
+        context.set_details("Internal Error")
+        return default_pb2.Empty()
 
     def _wrapper(self, behavior):
         @wraps(behavior)
@@ -78,26 +84,31 @@ class RpcExceptionInterceptor(BaseInterceptor):
                 ctx.push()
                 return behavior(request, context)
             except Exception as e:
+                # if debug, raise exception directly
+                if self.app.debug:
+                    context.set_code(StatusCode.INTERNAL)
+                    context.set_details(traceback.format_exc())
+                    raise
                 # If the exception is instantiated from RpcException,
                 # use the code and details directly.
                 # NOTE: Maybe it's a good choice to give permission to choose
                 # whether to raise exception or catch all exceptions,
                 # but to achieve this goal, the teardown_request feature must be
                 # completed firstly.
-                print(traceback.format_exc())
                 if isinstance(e, RpcException):
                     context.set_code(e.status_code)
                     context.set_details(e.details)
+                    return default_pb2.Empty()
                 else:
                     # common exceptions would defauld to RpcException
-                    context.set_code(StatusCode.INTERNAL)
-                    context.set_details("Internal Error")
-                # if debug mode is on, overwrite error message
-                if self.app.debug:
-                    context.set_code(StatusCode.INTERNAL)
-                    context.set_details(traceback.format_exc())
-                    raise
-                return default_pb2.Empty()
+                    for cls in type(e).mro():
+                        handler = self._exc_handlers.get(cls)
+                        if handler and callable(handler):
+                            return handler(e, context)
+                    # use default handler
+                    return self._default_handler(e, handler)
+            finally:
+                ctx.pop()
 
         return wrapper
 

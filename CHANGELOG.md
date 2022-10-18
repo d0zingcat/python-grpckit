@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO Wrap data into WrapperResponse.
 - TODO Compatible to gevent.
 
+## [0.1.4] - 2022-10-18
+### Added
+- Customized exception handler.
+- Allow gRPC threadpool pass through.
+- Fully implement `@app.teardown_request` and `@app.teardown_app_context`.
+
+### Changed
+- Fix app context leak.
 
 ## [0.1.3] - 2022-10-14
 ### Added
@@ -21,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - App/Request context management added.
 - [Flask](https://flask.palletsprojects.com/en/2.2.x/) like app/request context.
-- Local and proxy management for app added.
+- Local and proxy management for app added, added global `g`/`request`/`current_app`.
 - App `teardonw_request` added.
 - Debug would reraise exception.
 - Thanks to app/request context implementation, the hacking in service to read current_app state could be achieved, now the decorator `@app.armed` could be used without any params, but providing ability to transparently parse request/response.
@@ -32,8 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `grpckit.wrapper.GrpcKitClient` to `grpckit.client.GrpcKitClient`
 - Change status_code of common exception from `grpc.StatusCode.UNKNOWN` to `grpc.StatusCode.INTERNAL`
 
-## [0.1.1] - 2022-10-10
-### Added
+## [0.1.1] - 2022-10-10 ### Added
 - Complex route registration `@app.armed` which reads func name as grpc method.
 - Transparent convert request and response to Python Dict.
 - Global excetion catch logic added.

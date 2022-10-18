@@ -79,6 +79,7 @@ class RequestContext:
             if not self._implicit_app_ctx_stack:
                 self.preserved = False
                 self._preserved_exc = None
+                self.app.do_teardown_request(exc)
 
         finally:
             rv = _request_ctx_stack.pop()

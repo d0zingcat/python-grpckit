@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable, List, Any
+from typing import Dict, Optional, Callable, List, Any, Type
 from collections import defaultdict
 from types import MappingProxyType
 from concurrent.futures import ThreadPoolExecutor
@@ -42,7 +42,7 @@ class GrpcKitApp:
         }
     )
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, threadpool=None):
         self.name: str = name or "grpckit"
         self.config: Config = Config(self.default_config)
 
@@ -57,8 +57,9 @@ class GrpcKitApp:
         )
 
         self.interceptors = {}
-
         self.teardown_app_context_funcs: List[Callable] = []
+        self.teardown_request_context_funcs: List[Callable] = []
+        self._threadpool = threadpool
 
     def run(
         self, host: Optional[str] = None, port: Optional[int] = None, **kwargs: Any
@@ -95,8 +96,10 @@ class GrpcKitApp:
 
         max_workers = self.config.get(K_GRPCKIT_MAX_WORKERS, 10)
 
+        if not self._threadpool:
+            self._threadpool = ThreadPoolExecutor(max_workers=max_workers)
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=max_workers),
+            self._threadpool,
             interceptors=interceptors,
             options=options,
         )
@@ -251,9 +254,41 @@ class GrpcKitApp:
     def app_context(self):
         return AppContext(self)
 
+    def teardown_app_context(self, func: Callable) -> Callable:
+        """Decorator for register app teardown funcs
+
+        :param func: decorator funcs
+        """
+        self.teardown_app_context_funcs.append(func)
+        return func
+
     def do_teardown_app_context(self, exc: Optional[BaseException] = None) -> None:
         """Called right before the application context is popped"""
         if exc is _sentinel:
             exc = sys.exc_info()[1]
         for func in reversed(self.teardown_app_context_funcs):
+            func(exc)
+
+    def exception_handler(self, exception: Type[Exception]) -> Callable:
+        """Decorate for register exception handler"""
+
+        def decorator(func: Callable) -> Callable:
+            self.register_exception_handler(exception, func)
+            return func
+
+        return decorator
+
+    def teardown_request(self, func: Callable) -> Callable:
+        """Decorator for register request teardown funcs
+
+        :param func: decorator funcs
+        """
+        self.teardown_request_context_funcs.append(func)
+        return func
+
+    def do_teardown_request(self, exc: Optional[BaseException] = None) -> None:
+        """Called right before the application context is popped"""
+        if exc is _sentinel:
+            exc = sys.exc_info()[1]
+        for func in reversed(self.teardown_request_context_funcs):
             func(exc)

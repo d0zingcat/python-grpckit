@@ -14,6 +14,10 @@ grpcio = "1.48.1"
 grpcio-tools = "1.48.1"
 
 
+[tool.poetry.scripts]
+grpckit = 'grpckit.cli:main'
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
