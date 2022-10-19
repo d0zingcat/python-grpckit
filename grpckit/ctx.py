@@ -1,7 +1,7 @@
 import sys
 from typing import Optional, List
 
-from ._global import (
+from .globals import (
     _app_ctx_stack,
     _request_ctx_stack,
 )
@@ -43,9 +43,7 @@ class AppContext:
 
 
 class RequestContext:
-    def __init__(
-        self, app: "GrpcKitApp", params=None, context=None  # noqa: F821
-    ) -> None:
+    def __init__(self, app, params=None, context=None) -> None:
         """Create request context"""
         self.app = app
         self.request = Request(params, context)

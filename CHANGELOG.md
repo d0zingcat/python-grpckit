@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO Consider to wrap non-dict result when using reflection.
 - TODO Wrap data into WrapperResponse.
 - TODO Compatible to gevent.
+- TODO remaked cli.
+
+## [0.1.5] - 2022-10-19
+### Added
+- Decorator `@app.armed` will wrap original dict to WrappedDict which supports `__getattr__`.
+### Changed
+- Rename _global.py to globals.py
 
 ## [0.1.4] - 2022-10-18
 ### Added
@@ -58,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto read and import proto module.
 
 [Unreleased]:
+[0.1.5]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.0...v0.1.1

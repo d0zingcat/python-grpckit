@@ -6,6 +6,7 @@ import grpc
 
 
 from .utils.parser import MessageToDict, DictToMessage
+from .types import WrappedDict
 
 
 class Service:
@@ -59,22 +60,31 @@ class Service:
             @wraps(func)
             def wrapper(request, context):
                 if transparent_transform:
-                    request = MessageToDict(request)
-                    # response_pb is optional, if not passed
+                    # response_pb/request_pb is optional, if not passed
                     # will read response from current app domain
-                    # format is "{service.name}__pb2.{func.name}_response"
+                    # response format is "{service.name}__pb2.{func.name}_response"
+                    # request format is "{service.name}__pb2.{func.name}_request"
                     if not response_pb:
                         # HACK: stateful method which gets data from current_app obj
-                        from ._global import current_app
+                        from .globals import current_app
 
-                        name = f"{self.name}__pb2.{func.__name__}_response"
-                        print(name)
-                        _response_pb = current_app._pb_request_models.get(name)
+                        response_pb_name = f"{self.name}__pb2.{func.__name__}_response"
+                        request_pb_name = f"{self.name}__pb2.{func.__name__}_request"
+                        _response_pb = current_app._pb_request_models.get(
+                            response_pb_name
+                        )
+                        _request_pb = current_app._pb_request_models.get(
+                            request_pb_name
+                        )
                     else:
                         _response_pb = response_pb
-                    response = func(request, context)
+                        _request_pb = request_pb
+                    if not _request_pb:
+                        raise ValueError("Invalid request_pb!")
                     if not _response_pb:
                         raise ValueError("Invalid response_pb!")
+                    request = WrappedDict(MessageToDict(request))
+                    response = func(request, context)
                     if type(response) is not dict:
                         raise AssertionError("Response must be python dict!")
                     return DictToMessage(response, _response_pb())
