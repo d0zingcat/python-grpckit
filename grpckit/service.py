@@ -30,20 +30,7 @@ class Service:
 
         return decorator
 
-    def route(self, func: Optional[Callable] = None) -> Callable:
-        """Add new route for service"""
-
-        def decorator(func: Callable) -> Callable:
-            if not func:
-                raise ValueError("Invalid func! Func should not be None")
-            self.add_method_rule(func.__name__, func)
-            return func
-
-        if func is None:
-            return decorator
-        return decorator(func)
-
-    def armed(
+    def route(
         self,
         func: Optional[Callable] = None,
         *,
@@ -51,7 +38,74 @@ class Service:
         response_pb: Any = None,
         transparent_transform: bool = True,
     ) -> Callable:
-        """Add new route for service and parse request/response"""
+        """Add new route for service, final edition which enable write service function
+        like a native python function, grpckit will wrap all the things those need to
+        be done for grpc framework, like request parse, register and so on.
+        """
+
+        def decorator(func: Callable) -> Callable:
+            if not func:
+                raise ValueError("Invalid func! Func should not be None")
+
+            @wraps(func)
+            def wrapper(request, context):
+                args = getfullargspec(func).args
+                options = dict()
+                if transparent_transform:
+                    # response_pb/request_pb is optional, if not passed
+                    # will read response from current app domain
+                    # response format is "{service.name}__pb2.{func.name}_response"
+                    # request format is "{service.name}__pb2.{func.name}_request"
+                    if not response_pb:
+                        # HACK: stateful method which gets data from current_app obj
+                        from .globals import current_app
+
+                        response_pb_name = f"{self.name}__pb2.{func.__name__}_response"
+                        request_pb_name = f"{self.name}__pb2.{func.__name__}_request"
+                        _response_pb = current_app._pb_request_models.get(response_pb_name)
+                        _request_pb = current_app._pb_request_models.get(request_pb_name)
+                    else:
+                        _response_pb = response_pb
+                        _request_pb = request_pb
+                    if not _request_pb:
+                        raise ValueError("Invalid request_pb!")
+                    if not _response_pb:
+                        raise ValueError("Invalid response_pb!")
+                    request = WrappedDict(MessageToDict(request))
+                    for arg in args:
+                        if not hasattr(request, arg):
+                            raise ValueError(f"Invalid argument, missing {arg}")
+                        options[arg] = getattr(request, arg)
+                    response = func(**options)
+                    if type(response) is not dict:
+                        raise AssertionError("Response must be python dict!")
+                    return DictToMessage(response, _response_pb())
+                # if not using transparent_transform
+                for arg in args:
+                    if not hasattr(request, arg):
+                        raise ValueError(f"Invalid argument, missing {arg}")
+                    options[arg] = getattr(request, arg)
+                response = func(**options)
+                return response
+
+            self.add_method_rule(wrapper.__name__, wrapper)
+            return wrapper
+
+        if func is None:
+            return decorator
+        return decorator(func)
+
+    def route_reduced(
+        self,
+        func: Optional[Callable] = None,
+        *,
+        request_pb: Any = None,
+        response_pb: Any = None,
+        transparent_transform: bool = True,
+    ) -> Callable:
+        """Add new route for service and parse request/response,
+        with reduced ability to parse request/response.
+        """
 
         def decorator(func: Callable) -> Callable:
             if not func:
@@ -70,12 +124,8 @@ class Service:
 
                         response_pb_name = f"{self.name}__pb2.{func.__name__}_response"
                         request_pb_name = f"{self.name}__pb2.{func.__name__}_request"
-                        _response_pb = current_app._pb_request_models.get(
-                            response_pb_name
-                        )
-                        _request_pb = current_app._pb_request_models.get(
-                            request_pb_name
-                        )
+                        _response_pb = current_app._pb_request_models.get(response_pb_name)
+                        _request_pb = current_app._pb_request_models.get(request_pb_name)
                     else:
                         _response_pb = response_pb
                         _request_pb = request_pb
@@ -98,9 +148,7 @@ class Service:
             return decorator
         return decorator(func)
 
-    def add_method_rule(
-        self, method: Optional[str] = None, func: Optional[Callable] = None
-    ) -> Any:
+    def add_method_rule(self, method: Optional[str] = None, func: Optional[Callable] = None) -> Any:
         """Add new method handler rule"""
         if not method or not func:
             raise ValueError("Invalid method name or handler func")

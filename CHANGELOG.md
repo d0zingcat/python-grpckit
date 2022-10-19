@@ -16,8 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.5] - 2022-10-19
 ### Added
 - Decorator `@app.armed` will wrap original dict to WrappedDict which supports `__getattr__`.
+- Enhance `@app.route` to a brand new decorator which inherit from `@app.armed`, providing ability to register a router, parse request/response like a native function, and it's the complete version and final edition for route registeration.
+
 ### Changed
-- Rename _global.py to globals.py
+- Rename _global.py to globals.py.
+- Rename `@app.armed` to `app.route_reduced`.
+
 
 ## [0.1.4] - 2022-10-18
 ### Added
