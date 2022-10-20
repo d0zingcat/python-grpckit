@@ -1,3 +1,8 @@
+from google.protobuf.message import Message
+
+from .utils.parser import MessageToDict
+
+
 class WrappedDict(dict):
     def __getattr__(self, k):
         try:
@@ -24,9 +29,31 @@ class GrpcKitRequest:
 
 
 class GrpcKitResponse:
-    def __init__(self):
-        pass
+    RAW_DATA_TYPE_PROTO = "proto"
+    RAW_DATA_TYPE_DICT = "dict"
+
+    def __init__(self, data):
+        self._raw_data = data
+        if isinstance(data, Message):
+            self._raw_data_type = self.RAW_DATA_TYPE_PROTO
+            self._native_dict = MessageToDict(message=data)
+        elif isinstance(data, dict):
+            self._raw_data_type = self.RAW_DATA_TYPE_DICT
+            self._native_dict = data
+        else:
+            raise ValueError("Invalid data type, should be protobuf message or python dict")
+        self._wrapped_dict = WrappedDict(self._native_dict)
 
     @property
     def proto(self):
-        pass
+        if self._raw_data_type == self.RAW_DATA_TYPE_PROTO:
+            return self._raw_data
+        raise ValueError("Raw data is not protobuf!")
+
+    @property
+    def data(self):
+        return self._wrapped_dict
+
+    @property
+    def native_data(self):
+        return self._native_dict

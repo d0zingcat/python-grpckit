@@ -12,16 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO Wrap data into WrapperResponse.
 - TODO Compatible to gevent.
 - TODO remaked cli.
+- TODO parser or hook to pre pre-process params.
+- TODO client legacy method wrapper which supports native grpc call procedure
+
+## [0.1.6] - 2022-10-20
+### Added
+- Wrap client response to `GrpcKitResponse`, giving caller the experience to control the data in which way they like.
+- Server return no longer need `return dict(foo=bar)`, returning `key, value` tuple instead is also supported.
+- Add `msg=` for customized exceptions `__init__` as alias for `message=`.
+
+### Changed
+- Client call no longer need `request=dict()`, use kwargs directly and wrap all the process args in `_args=dict()`.
 
 ## [0.1.5] - 2022-10-19
 ### Added
-- Decorator `@app.armed` will wrap original dict to WrappedDict which supports `__getattr__`.
-- Enhance `@app.route` to a brand new decorator which inherit from `@app.armed`, providing ability to register a router, parse request/response like a native function, and it's the complete version and final edition for route registeration.
+- Decorator `@service.armed` will wrap original dict to WrappedDict which supports `__getattr__`.
+- Enhance `@service.route` to a brand new decorator which inherit from `@service.armed`, providing ability to register a router, parse request/response like a native function, and it's the complete version and final edition for route registeration.
 
 ### Changed
 - Rename _global.py to globals.py.
-- Rename `@app.armed` to `app.route_reduced`.
-
+- Rename `@service.armed` to `@service.route_reduced`.
 
 ## [0.1.4] - 2022-10-18
 ### Added
@@ -43,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local and proxy management for app added, added global `g`/`request`/`current_app`.
 - App `teardonw_request` added.
 - Debug would reraise exception.
-- Thanks to app/request context implementation, the hacking in service to read current_app state could be achieved, now the decorator `@app.armed` could be used without any params, but providing ability to transparently parse request/response.
+- Thanks to app/request context implementation, the hacking in service to read current_app state could be achieved, now the decorator `@service.armed` could be used without any params, but providing ability to transparently parse request/response.
 
 ### Changed
 - Move exception handler to outest round.
@@ -57,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global excetion catch logic added.
 
 ### Changed
-- Rename `@app.route` to `@app.legacy_route`.
+- Rename `@service.route` to `@service.legacy_route`.
 
 ### Removed
 - Middleware. 
@@ -69,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto read and import proto module.
 
 [Unreleased]:
+[0.1.6]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.2...v0.1.3

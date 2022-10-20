@@ -4,8 +4,9 @@ import re
 import grpc
 
 from .common import ContextManager
+from .types import GrpcKitResponse
 from .utils.proto import scan_pb_grpc
-from .utils.parser import DictToMessage, MessageToDict
+from .utils.parser import DictToMessage
 
 
 class MethodWrapper:
@@ -17,44 +18,40 @@ class MethodWrapper:
         stub_name,
         reuse_channel,
         pb_request_models,
-        transparent_transform,
     ):
         self._method = method
         self._channel = channel
         self._reuse_channel = reuse_channel
         self._pb_request_models = pb_request_models
-        self._transparent_transform = transparent_transform
         self._name = name
         self._stub_name = stub_name
 
-    def __call__(self, request=None, request_pb=None, response_pb=None, **kwargs):
-        if self._transparent_transform:
-            if not request_pb:
-                pass
-        if self._transparent_transform:
-            _name_split = re.split(r"Stub$", self._stub_name)
-            if not _name_split:
-                raise ValueError("Invalid stub!")
-            _name = _name_split[0]
-            request_import_format = f"{_name}__pb2.{self._name}_request"
-            response_import_format = f"{_name}__pb2.{self._name}_response"
-            if not request_pb:
-                request_pb = self._pb_request_models.get(request_import_format)
-            if not response_pb:
-                response_pb = self._pb_request_models.get(response_import_format)
+    def __call__(self, **kwargs):
+        args = kwargs.pop("_args", {})
+        response_pb = args.pop("response_pb", None)
+        request_pb = args.pop("request_pb", None)
+        _name_split = re.split(r"Stub$", self._stub_name)
+        if not _name_split:
+            raise ValueError("Invalid stub!")
+        _name = _name_split[0]
+        request_import_format = f"{_name}__pb2.{self._name}_request"
+        response_import_format = f"{_name}__pb2.{self._name}_response"
+        if not request_pb:
+            request_pb = self._pb_request_models.get(request_import_format)
+        if not response_pb:
+            response_pb = self._pb_request_models.get(response_import_format)
         if not request_pb:
             raise ValueError("Invalid pb request")
         if not response_pb:
             raise ValueError("Invalid pb response")
-        if self._transparent_transform:
-            request = DictToMessage(request, request_pb())
-        response = self._method(request=request, **kwargs)
-        if self._transparent_transform:
-            response = MessageToDict(response, response_pb())
+
+        request = DictToMessage(kwargs, request_pb())
+        response = self._method(request=request, **args)
+        grpckit_response = GrpcKitResponse(response)
         # 不重用channel则关闭
         if not self._reuse_channel:
             self._channel._close()
-        return response
+        return grpckit_response
 
 
 class GrpcKitClient:
@@ -114,7 +111,6 @@ class GrpcKitClient:
             self._stub_name,
             self._reuse_channel,
             self._pb_request_models,
-            self._transparent_transform,
         )
 
 

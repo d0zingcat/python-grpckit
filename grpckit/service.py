@@ -77,8 +77,16 @@ class Service:
                             raise ValueError(f"Invalid argument, missing {arg}")
                         options[arg] = getattr(request, arg)
                     response = func(**options)
-                    if type(response) is not dict:
-                        raise AssertionError("Response must be python dict!")
+                    if not isinstance(response, dict) and not isinstance(response, tuple):
+                        raise AssertionError("Response must be python dict or tuple!")
+                    # if the response is a tuple, wrap the data with key in a dict automatically
+                    if isinstance(response, tuple):
+                        if len(response) != 2:
+                            raise AssertionError(
+                                "Result data must be two items, first is data and second is key"
+                            )
+                        k, v = response
+                        return DictToMessage({k: v}, _response_pb())
                     return DictToMessage(response, _response_pb())
                 # if not using transparent_transform
                 for arg in args:
@@ -165,8 +173,8 @@ class Service:
     def _not_implement_method(self, context):
         """Handler for not implement method"""
         context.set_code(grpc.StatusCode.NOT_FOUND)
-        context.set_details("Method not fund!")
-        raise NotImplementedError("Method not fund!")
+        context.set_details("Method not found!")
+        raise NotImplementedError("Method not found!")
 
     def _default_handler(self, request, context, **kwargs):
         """Default handler"""

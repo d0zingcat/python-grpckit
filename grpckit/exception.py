@@ -26,6 +26,7 @@ class RpcException(Exception):
         details: A string with additional informantion about the error.
     Args:
         message: If not None, specifies a custom error message.
+        msg: Alias for message
         status_code: If not None, sets the status code.
     Raises:
         ValueError: If status_code is OK.
@@ -35,12 +36,17 @@ class RpcException(Exception):
     details: str = "Unknown exception occurred"
 
     def __init__(
-        self, code: Optional[StatusCode] = None, message: Optional[str] = None
+        self,
+        code: Optional[StatusCode] = None,
+        message: Optional[str] = None,
+        msg: Optional[str] = None,
     ):
         if code is not None:
             if code == StatusCode.Ok:
                 raise ValueError("The status code for an exception cannot be OK")
             self.status_code = code
+        if msg is not None:
+            self.details = msg
         if message is not None:
             self.details = message
 
@@ -126,8 +132,7 @@ class FailedPrecondition(RpcException):
 
     status_code = StatusCode.FAILED_PRECONDITION
     details = (
-        "The operation was rejected because the system is not"
-        " in a state required for execution"
+        "The operation was rejected because the system is not" " in a state required for execution"
     )
 
 
@@ -206,9 +211,7 @@ class Unauthenticated(RpcException):
     """The request does not have valid authentication credentials for the operation."""
 
     status_code = StatusCode.UNAUTHENTICATED
-    details = (
-        "The request does not have valid authentication credentials for the operation"
-    )
+    details = "The request does not have valid authentication credentials for the operation"
 
 
 class Unavailable(RpcException):
@@ -225,9 +228,7 @@ class Unimplemented(RpcException):
     """The operation is not implemented or is not supported/enabled in this service."""
 
     status_code = StatusCode.UNIMPLEMENTED
-    details = (
-        "The operation is not implemented or not supported/enabled in this service"
-    )
+    details = "The operation is not implemented or not supported/enabled in this service"
 
 
 class Unknown(RpcException):
