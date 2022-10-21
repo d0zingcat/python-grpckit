@@ -1,6 +1,5 @@
 from typing import Dict, Optional, Callable, List, Any, Type
 from collections import defaultdict
-from types import MappingProxyType
 from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
@@ -34,13 +33,11 @@ class GrpcKitApp:
     # store all pb request models
     _pb_request_models: Dict[str, Any] = dict()
 
-    default_config = MappingProxyType(
-        {
-            K_GRPCKIT_MAX_WORKERS: 10,
-            K_GRPCKIT_DEBUG: False,
-            K_GRPCKIT_SERVICE_SCAN_DIR: ".",
-        }
-    )
+    default_config = {
+        K_GRPCKIT_MAX_WORKERS: 10,
+        K_GRPCKIT_DEBUG: False,
+        K_GRPCKIT_SERVICE_SCAN_DIR: ".",
+    }
 
     def __init__(self, name=None, threadpool=None):
         self.name: str = name or "grpckit"
@@ -48,22 +45,16 @@ class GrpcKitApp:
 
         self.services: Dict[str, Service] = dict()
 
-        self.before_request_funcs: Dict[Optional[str], List[Callable]] = defaultdict(
-            list
-        )
+        self.before_request_funcs: Dict[Optional[str], List[Callable]] = defaultdict(list)
 
-        self.after_request_funcs: Dict[Optional[str], List[Callable]] = defaultdict(
-            list
-        )
+        self.after_request_funcs: Dict[Optional[str], List[Callable]] = defaultdict(list)
 
         self.interceptors = {}
         self.teardown_app_context_funcs: List[Callable] = []
         self.teardown_request_context_funcs: List[Callable] = []
         self._threadpool = threadpool
 
-    def run(
-        self, host: Optional[str] = None, port: Optional[int] = None, **kwargs: Any
-    ) -> None:
+    def run(self, host: Optional[str] = None, port: Optional[int] = None, **kwargs: Any) -> None:
         options = self.config.rpc_options()
 
         """With RpcExceptionInterceptor as the most inner interceptor,
@@ -128,9 +119,7 @@ class GrpcKitApp:
         self.after_request_funcs.setdefault(None, []).append(func)
         return func
 
-    def _bind_port(
-        self, server: grpc.Server, address: str, **options: Any
-    ) -> grpc.Server:
+    def _bind_port(self, server: grpc.Server, address: str, **options: Any) -> grpc.Server:
         def _read_pem(path):
             if path is None:
                 return path
@@ -175,9 +164,7 @@ class GrpcKitApp:
 
         self._services[service.name] = service
 
-    def legacy_route(
-        self, method: Optional[str] = None, service: Optional[str] = None
-    ) -> Callable:
+    def legacy_route(self, method: Optional[str] = None, service: Optional[str] = None) -> Callable:
         def decorator(func: Callable) -> Callable:
             if not service:
                 raise ValueError(f"Invalid service name for method: {method}")
@@ -192,9 +179,7 @@ class GrpcKitApp:
 
         return decorator
 
-    def route(
-        self, func: Optional[Callable] = None, service: Optional[str] = None
-    ) -> Callable:
+    def route(self, func: Optional[Callable] = None, service: Optional[str] = None) -> Callable:
         def decorator(func: Callable) -> Callable:
             method = func.__name__
             if not service:
@@ -225,15 +210,11 @@ class GrpcKitApp:
         self._register_funcs = register_funcs
         for name, instance in self._services.items():
             if not isinstance(instance, Service):
-                raise TypeError(
-                    f"Service instance type must be `Service`, Please check: {name}"
-                )
+                raise TypeError(f"Service instance type must be `Service`, Please check: {name}")
 
             func = self._register_funcs.get("add_%sServicer_to_server" % name)
             if not func:
-                raise ValueError(
-                    f"Can't find service '{name}' info from ProtoBuf files!"
-                )
+                raise ValueError(f"Can't find service '{name}' info from ProtoBuf files!")
             # Use add_xServicer_to_server function in ProtoBuf to bind
             # service to gRPC server
             func(instance, server)

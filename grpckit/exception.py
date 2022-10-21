@@ -32,7 +32,7 @@ class RpcException(Exception):
         ValueError: If status_code is OK.
     """
 
-    status_code: StatusCode = StatusCode.UNKNOWN
+    status_code = StatusCode.UNKNOWN
     details: str = "Unknown exception occurred"
 
     def __init__(
@@ -42,7 +42,7 @@ class RpcException(Exception):
         msg: Optional[str] = None,
     ):
         if code is not None:
-            if code == StatusCode.Ok:
+            if code == StatusCode.OK:
                 raise ValueError("The status code for an exception cannot be OK")
             self.status_code = code
         if msg is not None:

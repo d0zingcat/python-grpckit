@@ -4,9 +4,9 @@ import re
 import grpc
 
 from .common import ContextManager
-from .types import GrpcKitResponse
+from .types import GrpcKitResponse, WrappedDict
 from .utils.proto import scan_pb_grpc
-from .utils.parser import DictToMessage
+from .utils.parser import DictToMessage, MessageToDict
 
 
 class MethodWrapper:
@@ -18,6 +18,7 @@ class MethodWrapper:
         stub_name,
         reuse_channel,
         pb_request_models,
+        timeout=None,
     ):
         self._method = method
         self._channel = channel
@@ -25,6 +26,7 @@ class MethodWrapper:
         self._pb_request_models = pb_request_models
         self._name = name
         self._stub_name = stub_name
+        self._timeout = timeout
 
     def __call__(self, **kwargs):
         args = kwargs.pop("_args", {})
@@ -45,13 +47,24 @@ class MethodWrapper:
         if not response_pb:
             raise ValueError("Invalid pb response")
 
+        if self._timeout is not None:
+            args["timeout"] = self._timeout
         request = DictToMessage(kwargs, request_pb())
-        response = self._method(request=request, **args)
-        grpckit_response = GrpcKitResponse(response)
-        # 不重用channel则关闭
-        if not self._reuse_channel:
-            self._channel._close()
-        return grpckit_response
+        grpckit_response = GrpcKitResponse()
+        try:
+            response = self._method(request=request, **args)
+            grpckit_response.load_data(response)
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.OK:
+                grpckit_response.ok = False
+                grpckit_response.msg = e.details()
+            # raise exception by default
+            raise
+        finally:
+            # 不重用channel则关闭
+            if not self._reuse_channel:
+                self._channel._close()
+        return WrappedDict.convert_from_dict(MessageToDict(response))
 
 
 class GrpcKitClient:
@@ -63,6 +76,7 @@ class GrpcKitClient:
         reuse_channel=False,
         scan_dir="./protos/pb",
         credentials=None,
+        timeout=None,
     ):
         self._secure = False
         self._channel = None
@@ -85,6 +99,7 @@ class GrpcKitClient:
         )
         for k, v in pb_request_models.items():
             self._pb_request_models[k] = v
+        self._timeout = timeout
 
     @property
     def channel(self):
@@ -111,6 +126,7 @@ class GrpcKitClient:
             self._stub_name,
             self._reuse_channel,
             self._pb_request_models,
+            timeout=self._timeout,
         )
 
 

@@ -32,7 +32,7 @@ class GrpcKitResponse:
     RAW_DATA_TYPE_PROTO = "proto"
     RAW_DATA_TYPE_DICT = "dict"
 
-    def __init__(self, data):
+    def load_data(self, data):
         self._raw_data = data
         if isinstance(data, Message):
             self._raw_data_type = self.RAW_DATA_TYPE_PROTO
@@ -44,11 +44,33 @@ class GrpcKitResponse:
             raise ValueError("Invalid data type, should be protobuf message or python dict")
         self._wrapped_dict = WrappedDict(self._native_dict)
 
+    def __init__(self, data=None):
+        if data:
+            self.load_data(data)
+        self._ok = True
+        self._msg = ""
+
     @property
     def proto(self):
         if self._raw_data_type == self.RAW_DATA_TYPE_PROTO:
             return self._raw_data
         raise ValueError("Raw data is not protobuf!")
+
+    @property
+    def msg(self):
+        return self._msg
+
+    @msg.setter
+    def msg(self, msg):
+        self._msg = msg
+
+    @property
+    def ok(self):
+        return self._ok
+
+    @ok.setter
+    def ok(self, ok):
+        self._ok = ok
 
     @property
     def data(self):

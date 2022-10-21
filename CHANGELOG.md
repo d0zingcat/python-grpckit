@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - TODO Reflection for gRPC option.
+- TODO app logger.
 - TODO Wrapped client call procedure.
 - TODO Consider to wrap non-dict result when using reflection.
 - TODO Wrap data into WrapperResponse.
@@ -14,6 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO remaked cli.
 - TODO parser or hook to pre pre-process params.
 - TODO client legacy method wrapper which supports native grpc call procedure
+- TODO client init with timeout param.
+- TODO prometheus monitoring.
+- TODO rich status code.
+- TODO Allow options control when instantiate a new `GrpcKitClient`.
+
+## [0.1.7] - 2022-10-21
+### Added
+- Allow timeout control when instantiate a new `GrpcKitClient`.
+
+### Changed
+- Fix Interceptor typo.
+- Fix App Config load.
+- GrpckitClient return dict directly, would not catch RpcError.
 
 ## [0.1.6] - 2022-10-20
 ### Added
