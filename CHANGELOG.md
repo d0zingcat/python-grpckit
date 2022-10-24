@@ -20,11 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO rich status code.
 - TODO Allow options control when instantiate a new `GrpcKitClient`.
 
-## [0.1.8] - 2022-10-22
+## [0.1.8] - 2022-10-24
 ### Added
 - Sentry integrated.
+- Prometheus integrated.
 - Builtin logger.
-
 
 ## [0.1.7] - 2022-10-21
 ### Added

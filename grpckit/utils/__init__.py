@@ -95,7 +95,7 @@ def import_string(import_name):
         raise ImportError(e)
 
 
-def logger_has_level_handler(logger):
+def has_level_handler(logger):
     """Check if there is a handler in the logging chain that will handle the
     given logger's effective level
     """

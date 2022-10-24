@@ -1,4 +1,4 @@
-"""Biz exceptions predefined for gprckit.
+"""Biz exceptions predefined for grpckit.
 See https://grpc.github.io/grpc/core/md_doc_statuscodes.html for the source of truth
 on status code meanings.
 Stolen from [grpc-interceptor](https://github.com/d5h-foss/grpc-interceptor/blob/master/src/grpc_interceptor/exceptions.py) # noqa: E501

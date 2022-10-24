@@ -15,6 +15,8 @@ from .constant import (
     K_GRPCKIT_LOG_FORMAT,
     K_GRPCKIT_LOG_HANDLER,
     K_GRPCKIT_LOG_LEVEL,
+    K_GRPCKIT_PROMETHEUS_SCRAPE,
+    K_GRPCKIT_PROMETHEUS_PORT,
     K_GRPCKIT_TLS_CA_CERT,
     K_GRPCKIT_SERVICE_SCAN_DIR,
     K_GRPCKIT_TLS_SERVER_KEY,
@@ -47,6 +49,8 @@ class GrpcKitApp:
         K_GRPCKIT_LOG_LEVEL: "WARNING",
         K_GRPCKIT_LOG_HANDLER: logging.StreamHandler(),
         K_GRPCKIT_LOG_FORMAT: "[%(asctime)s %(levelname)s in %(module)s] %(message)s",
+        K_GRPCKIT_PROMETHEUS_SCRAPE: False,
+        K_GRPCKIT_PROMETHEUS_PORT: 9091,
     }
 
     def __init__(self, name=None, threadpool=None):
@@ -66,8 +70,13 @@ class GrpcKitApp:
         self._extensions = {}
 
     def run(self, host: Optional[str] = None, port: Optional[int] = None, **kwargs: Any) -> None:
-        options = self.config.rpc_options()
+        # run prometheus client
+        if self.config.get(K_GRPCKIT_PROMETHEUS_SCRAPE):
+            from prometheus_client import start_http_server
 
+            start_http_server(self.config[K_GRPCKIT_PROMETHEUS_PORT])
+
+        options = self.config.rpc_options()
         """With RpcExceptionInterceptor as the most inner interceptor,
         this ensures all the exceptions will be caught and process to
         normal grpc response, and the @after_request funcs will always be invoked.
@@ -266,9 +275,9 @@ class GrpcKitApp:
         return self.extensions
 
     def _setup_logger(self):
-        fmt = self.config["GRPC_LOG_FORMAT"]
-        lvl = self.config["GRPC_LOG_LEVEL"]
-        h = self.config["GRPC_LOG_HANDLER"]
+        fmt = self.config["GRPCKIT_LOG_FORMAT"]
+        lvl = self.config["GRPCKIT_LOG_LEVEL"]
+        h = self.config["GRPCKIT_LOG_HANDLER"]
         h.setFormatter(logging.Formatter(fmt))
         root = logging.getLogger()
         root.setLevel(lvl)
