@@ -178,7 +178,6 @@ class Service:
 
     def _default_handler(self, request, context, **kwargs):
         """Default handler"""
-        # print(self._router, kwargs['func'])
         func = self._router.get(kwargs["func"], self._not_implement_method)
         args = getfullargspec(func).args
 

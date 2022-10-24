@@ -7,6 +7,7 @@ from .constant import (
     K_GRPCKIT_RECEIVE_MESSAGE_MAX_LENGHT,
     K_GRPCKIT_OPTIONS,
 )
+from .types import WrappedDict
 
 
 class Config(dict):
@@ -40,12 +41,8 @@ class Config(dict):
         options = list()
 
         # Default message length is 5MB
-        max_send_message_length = self.get(
-            K_GRPCKIT_SEND_MESSAGE_MAX_LENGHT, 1024 * 1024 * 5
-        )
-        max_receive_message_length = self.get(
-            K_GRPCKIT_RECEIVE_MESSAGE_MAX_LENGHT, 1024 * 1024 * 5
-        )
+        max_send_message_length = self.get(K_GRPCKIT_SEND_MESSAGE_MAX_LENGHT, 1024 * 1024 * 5)
+        max_receive_message_length = self.get(K_GRPCKIT_RECEIVE_MESSAGE_MAX_LENGHT, 1024 * 1024 * 5)
 
         options.append(("grpc.max_send_message_length", max_send_message_length))
         options.append(("grpc.max_receive_message_length", max_receive_message_length))
@@ -57,3 +54,18 @@ class Config(dict):
             options.append(option)
 
         return options
+
+    def get_namespace(self, namespace, lowercase=True, trim_namespace=True):
+        rv = {}
+        for k, v in self.items():
+            if not k.startswith(namespace):
+                continue
+            if trim_namespace:
+                i = len(namespace)
+                key = k[i:]
+            else:
+                key = k
+            if lowercase:
+                key = key.lower()
+            rv[key] = v
+        return WrappedDict.convert_from_dict(rv)

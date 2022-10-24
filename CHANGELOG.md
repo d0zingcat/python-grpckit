@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TODO rich status code.
 - TODO Allow options control when instantiate a new `GrpcKitClient`.
 
+## [0.1.8] - 2022-10-22
+### Added
+- Sentry integrated.
+
+
 ## [0.1.7] - 2022-10-21
 ### Added
 - Allow timeout control when instantiate a new `GrpcKitClient`.
@@ -93,6 +98,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto read and import proto module.
 
 [Unreleased]:
+[0.1.8]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/d0zingcat/python-grpckit/compare/v0.1.3...v0.1.4

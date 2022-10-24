@@ -12,3 +12,4 @@ repos:
       args:
         - "--max-line-length=100"
         - "--max-complexity=20"
+        - "--ignore=E203"

@@ -3,6 +3,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
+import inspect
 
 import grpc
 
@@ -53,6 +54,7 @@ class GrpcKitApp:
         self.teardown_app_context_funcs: List[Callable] = []
         self.teardown_request_context_funcs: List[Callable] = []
         self._threadpool = threadpool
+        self._extensions = {}
 
     def run(self, host: Optional[str] = None, port: Optional[int] = None, **kwargs: Any) -> None:
         options = self.config.rpc_options()
@@ -220,6 +222,39 @@ class GrpcKitApp:
             func(instance, server)
             for k, v in pb_request_models.items():
                 self._pb_request_models[k] = v
+
+    def _is_ext(self, ins):
+        return not inspect.isclass(ins) and hasattr(ins, "init_app")
+
+    def register_extension(self, ext):
+        """register extension
+
+        :param ext: extension object
+        """
+        if not self._is_ext(ext):
+            raise ValueError("Invalid extension! Should be instance of class with init_app!")
+        self._register_extension(ext.__class__.__name__, ext)
+
+    def _register_extension(self, name, ext):
+        """register extension
+
+        :param name: extension name
+        :param ext: extension object
+        """
+        if not self._is_ext(ext):
+            raise ValueError("Invalid extension! Should be instance of class with init_app!")
+        ext.init_app(self)
+        if name in self._extensions:
+            raise ValueError("extension duplicated: {}".format(name))
+        self._extensions[name] = ext
+
+    def load_extensions_in_module(self, module):
+        def is_ext(ins):
+            return not inspect.isclass(ins) and hasattr(ins, "init_app")
+
+        for n, ext in inspect.getmembers(module, is_ext):
+            self._register_extension(n, ext)
+        return self.extensions
 
     @property
     def debug(self) -> bool:

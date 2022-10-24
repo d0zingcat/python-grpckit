@@ -14,6 +14,9 @@ class WrappedDict(dict):
     def __setattr__(self, k, v):
         self.__setitem__(k, v)
 
+    def __dir__(self):
+        return self.keys()
+
     @classmethod
     def convert_from_dict(cls, dct: dict):
         ins = cls(**dct)
