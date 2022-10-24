@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.8] - 2022-10-22
 ### Added
 - Sentry integrated.
+- Builtin logger.
 
 
 ## [0.1.7] - 2022-10-21

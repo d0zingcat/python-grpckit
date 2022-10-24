@@ -14,9 +14,7 @@ class cached_property(property):
     The function wrapped is called the first time to retrieve the result
     and then that calculated result is used the next time you access the value"""
 
-    def __init__(
-        self, func, name=None, doc=None
-    ):  # pylint: disable=super-init-not-called
+    def __init__(self, func, name=None, doc=None):  # pylint: disable=super-init-not-called
         self.__name__ = name or func.__name__
         self.__module__ = func.__module__
         self.__doc__ = doc or func.__doc__
@@ -95,3 +93,22 @@ def import_string(import_name):
         return getattr(module, obj_name)
     except AttributeError as e:
         raise ImportError(e)
+
+
+def logger_has_level_handler(logger):
+    """Check if there is a handler in the logging chain that will handle the
+    given logger's effective level
+    """
+    level = logger.getEffectiveLevel()
+    current = logger
+
+    while current:
+        if any(handler.level <= level for handler in current.handlers):
+            return True
+
+        if not current.propagate:
+            break
+
+        current = current.parent
+
+    return False

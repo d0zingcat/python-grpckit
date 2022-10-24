@@ -1,15 +1,20 @@
 from typing import Dict, Optional, Callable, List, Any, Type
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from functools import cached_property
 import os
 import sys
 import inspect
+import logging
 
 import grpc
 
 from .constant import (
     K_GRPCKIT_DEBUG,
     K_GRPCKIT_MAX_WORKERS,
+    K_GRPCKIT_LOG_FORMAT,
+    K_GRPCKIT_LOG_HANDLER,
+    K_GRPCKIT_LOG_LEVEL,
     K_GRPCKIT_TLS_CA_CERT,
     K_GRPCKIT_SERVICE_SCAN_DIR,
     K_GRPCKIT_TLS_SERVER_KEY,
@@ -20,6 +25,7 @@ from .service import Service
 from .interceptor import MiddlewareInterceptor, RpcExceptionInterceptor
 from .ctx import AppContext, RequestContext
 from .utils.proto import scan_pb_grpc
+from .utils import has_level_handler
 
 
 # a singleton sentinel value for parameter defaults
@@ -38,6 +44,9 @@ class GrpcKitApp:
         K_GRPCKIT_MAX_WORKERS: 10,
         K_GRPCKIT_DEBUG: False,
         K_GRPCKIT_SERVICE_SCAN_DIR: ".",
+        K_GRPCKIT_LOG_LEVEL: "WARNING",
+        K_GRPCKIT_LOG_HANDLER: logging.StreamHandler(),
+        K_GRPCKIT_LOG_FORMAT: "[%(asctime)s %(levelname)s in %(module)s] %(message)s",
     }
 
     def __init__(self, name=None, threadpool=None):
@@ -255,6 +264,28 @@ class GrpcKitApp:
         for n, ext in inspect.getmembers(module, is_ext):
             self._register_extension(n, ext)
         return self.extensions
+
+    def _setup_logger(self):
+        fmt = self.config["GRPC_LOG_FORMAT"]
+        lvl = self.config["GRPC_LOG_LEVEL"]
+        h = self.config["GRPC_LOG_HANDLER"]
+        h.setFormatter(logging.Formatter(fmt))
+        root = logging.getLogger()
+        root.setLevel(lvl)
+        root.addHandler(h)
+
+    @cached_property
+    def logger(self):
+        self._setup_logger()
+
+        logger = logging.getLogger(self.name)
+        if self.debug and logger.level == logging.NOTSET:
+            logger.setLevel(logging.DEBUG)
+        if not has_level_handler(logger):
+            h = logging.StreamHandler()
+            h.setFormatter(logging.Formatter("%(message)s"))
+            logger.addHandler(h)
+        return logger
 
     @property
     def debug(self) -> bool:
